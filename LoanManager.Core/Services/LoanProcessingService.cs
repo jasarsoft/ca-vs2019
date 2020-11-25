@@ -8,8 +8,8 @@ namespace LoanManager.Core.Services
 {
     public class LoanProcessingService : ILoanProcessingService
     {
-        private List<ILoanQualificationRule> _loanApprovalRules;
-        private List<LoanRate> _loanRates;
+        private readonly List<ILoanQualificationRule> _loanApprovalRules;
+        private readonly List<LoanRate> _loanRates;
 
         public LoanProcessingService(ILoanRateRepository loanRateRepository, List<ILoanQualificationRule> rules)
             : this(loanRateRepository.GetLoanRates(), rules.ToArray())
@@ -29,14 +29,14 @@ namespace LoanManager.Core.Services
             List<ILoanQualificationRule> failingRules = _loanApprovalRules.Where
                 (rule => rule.CheckLoanApprovalRule(application) == false).ToList();
 
-            if (failingRules.Count > 0) 
+            if (failingRules.Count > 0)
             {
                 LoanApplicationResult result = LoanApplicationResult.CreateDeniedResult(application, failingRules);
                 return result;
             }
 
             // Determine interest rate
-            var interestRate = DetermineInterestRate(application);
+            double interestRate = DetermineInterestRate(application);
 
             // Determine monthly payment
             double monthlyPayment = CalculateLoanPayment(loanAmount: application.LoanAmount,
@@ -49,7 +49,7 @@ namespace LoanManager.Core.Services
         {
             double interestRate;
             double creditScore = application.CreditScore;
-            var rate = _loanRates.FirstOrDefault(r =>
+            LoanRate rate = _loanRates.FirstOrDefault(r =>
                 creditScore >= r.LowerCreditScore
                 && creditScore <= r.UpperCreditScore);
 

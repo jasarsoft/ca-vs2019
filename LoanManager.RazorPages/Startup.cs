@@ -50,7 +50,7 @@ namespace LoanManager.RazorPages
                 new TermLengthApprovalRule()
             };
             services.AddScoped<List<ILoanQualificationRule>>(provider => rules);
-            services.AddScoped<loanProcessingService, loanProcessingService>();
+            services.AddScoped<LoanProcessingService, LoanProcessingService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

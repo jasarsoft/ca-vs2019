@@ -14,11 +14,11 @@ namespace LoanManager.RazorPages.Pages.NewLoan
 {
     public class CreateModel : PageModel
     {
-        private loanProcessingService _loanProcessingService;
+        private LoanProcessingService _loanProcessingService;
 
         private ILoanApplicationResultRepository _resultRepository;
 
-        public CreateModel(loanProcessingService loanProcessingService,  ILoanApplicationResultRepository resultRepository)
+        public CreateModel(LoanProcessingService loanProcessingService,  ILoanApplicationResultRepository resultRepository)
         {
             _loanProcessingService = loanProcessingService;
             _resultRepository = resultRepository;

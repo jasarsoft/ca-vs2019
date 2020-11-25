@@ -1,28 +1,23 @@
 ﻿using LoanManager.Core.DataInterface;
 using LoanManager.Core.Domain;
-using System.Globalization;
-using System.IO;
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace LoanManager.Core.Services
 {
-    public class loanProcessingService
+    public class LoanProcessingService : ILoanProcessingService
     {
         private List<ILoanQualificationRule> _loanApprovalRules;
         private List<LoanRate> _loanRates;
-        private List<LoanApplicationResult> _loanResults;
 
-        public loanProcessingService(ILoanRateRepository loanRateRepository, List<ILoanQualificationRule> rules)
+        public LoanProcessingService(ILoanRateRepository loanRateRepository, List<ILoanQualificationRule> rules)
             : this(loanRateRepository.GetLoanRates(), rules.ToArray())
         {
 
         }
 
-        public loanProcessingService(List<LoanRate> rates, params ILoanQualificationRule[] rules)
+        public LoanProcessingService(List<LoanRate> rates, params ILoanQualificationRule[] rules)
         {
             _loanRates = rates;
             _loanApprovalRules = rules.ToList();
@@ -34,15 +29,27 @@ namespace LoanManager.Core.Services
             List<ILoanQualificationRule> failingRules = _loanApprovalRules.Where
                 (rule => rule.CheckLoanApprovalRule(application) == false).ToList();
 
-            if (failingRules.Count > 0) {
+            if (failingRules.Count > 0) 
+            {
                 LoanApplicationResult result = LoanApplicationResult.CreateDeniedResult(application, failingRules);
                 return result;
             }
 
             // Determine interest rate
+            var interestRate = DetermineInterestRate(application);
+
+            // Determine monthly payment
+            double monthlyPayment = CalculateLoanPayment(loanAmount: application.LoanAmount,
+                termYears: application.Term.Years, interestRate: interestRate);
+
+            return LoanApplicationResult.CreateApprovedResult(application, interestRate, monthlyPayment);
+        }
+
+        private double DetermineInterestRate(LoanApplication application)
+        {
             double interestRate;
             double creditScore = application.CreditScore;
-            LoanRate rate = _loanRates.FirstOrDefault(r =>
+            var rate = _loanRates.FirstOrDefault(r =>
                 creditScore >= r.LowerCreditScore
                 && creditScore <= r.UpperCreditScore);
 
@@ -51,13 +58,9 @@ namespace LoanManager.Core.Services
             if (application.ApplicantType.ToLower() == "premiere")
             {
                 interestRate = rate.InterestRate - .01;
-            } 
+            }
 
-            // Determine monthly payment
-            double monthlyPayment = CalculateLoanPayment(loanAmount: application.LoanAmount,
-                termYears: application.Term.Years, interestRate: interestRate);
-
-            return LoanApplicationResult.CreateApprovedResult(application, interestRate, monthlyPayment);
+            return interestRate;
         }
 
         internal double CalculateLoanPayment(double loanAmount, int termYears, double interestRate)
